@@ -4,6 +4,9 @@
 /************************************************************************************/
 /************************************************************************************/
 
+//Update für Secrets
+#include "credentials.h"
+
 // Upon first installation, rename this file from BSB_lan_config.h.default to BSB_lan_config.h and adjust settings accordingly
 
 /* Select language; so far German is the most complete, with English following.
@@ -27,7 +30,7 @@ byte UseEEPROM = 1;
 /*
  * Configuration of the network settings
 */
-uint8_t network_type = LAN;             // Set to LAN (0) when using Ethernet connection. Set to WLAN (1) when using WiFi. Arduino users using WiFiSpi have to activate the definement below as well.
+uint8_t network_type = WLAN;             // Set to LAN (0) when using Ethernet connection. Set to WLAN (1) when using WiFi. Arduino users using WiFiSpi have to activate the definement below as well.
 uint16_t HTTPPort = 80;
 bool useDHCP = true;                    // Set to false if you want to use a fixed IP.
 byte ip_addr[4] = {192,168,178,88};     // Please note the commas instead of dots!!!  Set useDHCP (above) to false if you want to use a fixed IP.
@@ -35,8 +38,8 @@ byte gateway_addr[4] = {192,168,178,1}; // Gateway address. This is usually your
 byte dns_addr[4] = {192,168,178,1};     // DNS server. Please note the commas instead of dots!!! Ignored if first value is 0.
 byte subnet_addr[4] = {255,255,255,0};  // Subnet address. Please use commas instead of dots!!! Ignored if first value is 0.
 
-char wifi_ssid[32] = "YourWiFiNetwork"; // enter your WiFi network name (SSID) here
-char wifi_pass[64] = "YourWiFiPassword";// enter your WiFi password here
+char wifi_ssid[32] = mySSID; // enter your WiFi network name (SSID) here
+char wifi_pass[64] = myPASSWORD;// enter your WiFi password here
 uint8_t bssid[6] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00};  // enter specific BSSID address here to ensure connecting to a specific access point. Set to all zeros under normal circumstances.
 
 //#define WIFISPI                         // Activate this on the Arduino to enable WiFi via WiFiSpi. DO NOT enable this on an ESP32.
@@ -89,7 +92,7 @@ byte trusted_ip_addr2[4] = {0,0,0,0};
  * User:Password
  */
 //char USER_PASS[64] = "User:Password";
-char USER_PASS[64] = "";      // HTTP-Auth will be disabled if USER_PASS string length is zero
+//char USER_PASS[64] = "";      // HTTP-Auth will be disabled if USER_PASS string length is zero
 
 /*
  *  Enter a MAC address, found either on the EthernetShield or use the one below.
@@ -99,7 +102,7 @@ char USER_PASS[64] = "";      // HTTP-Auth will be disabled if USER_PASS string 
 byte mac[6] = { 0x00, 0x80, 0x41, 0x19, 0x69, 0x90 };
 
 // Setting bus type
-uint8_t bus_type = 0;  // set bus system at boot: 0 = BSB, 1 = LPB, 2 = PPS
+uint8_t bus_type = 1;  // set bus system at boot: 0 = BSB, 1 = LPB, 2 = PPS
 // BSB:
 // - 'own_address' sets own address, defaults to 0x42 (LAN in serial monitor)
 // - 'dest_address' sets destination address, defaults to 0 for heating system.
@@ -123,7 +126,7 @@ byte bus_pins[2] = {0,0}; //First value - RX pin, second value - TX pin. 0,0 - a
 
 // Setting to determine on ESP32 whether to use SD card adapter (if present) or ESP32's internal flash.
 // SD card should always be preferred to protect the ESP32's flash from wearing down.
-uint8_t LogDestination = SDCARD;  // Possible logging devices: SDCARD (0) = SD card, FLASH (1) = ESP32's flash memory
+uint8_t LogDestination = FLASH;  // Possible logging devices: SDCARD (0) = SD card, FLASH (1) = ESP32's flash memory
 // If you use an SD card reader on the Joy-It ESP32 NodeMCU, you can configure the SPI pins here:
 #define SD_SCK 18
 #define SD_MISO 19
@@ -144,7 +147,7 @@ uint8_t logTelegram = LOGTELEGRAM_OFF;
 // Logging data from parameters
 // Interval and list of parameters can be redefined through /L command during runtime
 // Data will be written to "datalog.txt"
-unsigned long log_interval = 300;  // Logging interval (to SD card, UDP and MQTT broker) in seconds
+unsigned long log_interval = 60;  // Logging interval (to SD card, UDP and MQTT broker) in seconds
 parameter log_parameters[40] = {
 // parameter, destination (as in dest_address below, -1 means "default (dest_address) address")
   {8700, -1},                   // Außentemperatur
@@ -176,7 +179,7 @@ byte mqtt_mode = 1; // MQTT: 1 - send messages in plain text format, 2 - send me
 char MQTTDeviceID[32] = "BSB-LAN";
 
 // Logging mode: 0 - disabled, 1 - write values to SD card, 2 - write 24h averages to SD card, 4 - send values to MQTT, 8 -  send values to UDP. Can be any sum of these values.
-byte LoggingMode = 0; //CF_LOGMODE_SD_CARD | CF_LOGMODE_24AVG | CF_LOGMODE_MQTT | CF_LOGMODE_MQTT_ONLY_LOG_PARAMS | CF_LOGMODE_UDP
+byte LoggingMode = 4; //CF_LOGMODE_SD_CARD | CF_LOGMODE_24AVG | CF_LOGMODE_MQTT | CF_LOGMODE_MQTT_ONLY_LOG_PARAMS | CF_LOGMODE_UDP
 
 // Create 24h averages from these parameters and save data into averages.txt on SD-card.
 parameter avg_parameters[40] = {
