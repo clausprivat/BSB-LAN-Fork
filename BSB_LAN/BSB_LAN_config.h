@@ -147,7 +147,7 @@ uint8_t logTelegram = LOGTELEGRAM_OFF;
 // Logging data from parameters
 // Interval and list of parameters can be redefined through /L command during runtime
 // Data will be written to "datalog.txt"
-unsigned long log_interval = 60;  // Logging interval (to SD card, UDP and MQTT broker) in seconds
+unsigned long log_interval = 10;  // Logging interval (to SD card, UDP and MQTT broker) in seconds
 parameter log_parameters[40] = {
 // parameter, destination (as in dest_address below, -1 means "default (dest_address) address")
   {8700, -1},                   // Außentemperatur
@@ -166,9 +166,9 @@ parameter log_parameters[40] = {
 };
 
 // Compile MQTT extension: activate sending log_parameters to MQTT broker every log_interval seconds
-char mqtt_broker_addr[33] = "192.168.178.20:1883";    // MQTT broker. Adjust LoggingMode to activate. Can be IP address or hostname. Optional port can be specified after trailing colon. If omitted, port defaults to 1883.
-char MQTTUsername[65] = "User";                 // Set username for MQTT broker here or set empty string if no username/password is used.
-char MQTTPassword[65] = "Pass";                 // Set password for MQTT broker here or set empty string if no password is used.
+char mqtt_broker_addr[33] = BSB_LAN_MQTT_BROKER_ADDR;    // MQTT broker. Adjust LoggingMode to activate. Can be IP address or hostname. Optional port can be specified after trailing colon. If omitted, port defaults to 1883.
+char MQTTUsername[65] = BSB_LAN_MQTT_USER;                 // Set username for MQTT broker here or set empty string if no username/password is used.
+char MQTTPassword[65] = BSB_LAN_MQTT_PASS;                 // Set password for MQTT broker here or set empty string if no password is used.
 char MQTTTopicPrefix[65] = "BSB-LAN"; 	        // Mandatory: Choose the "topic" for MQTT messages here.
 byte mqtt_mode = 1; // MQTT: 1 - send messages in plain text format, 2 - send messages in JSON format, 3 - send messages in rich JSON format. Use this if you want a json package of your logging information printed to the mqtt topic
 // JSON payload will be of the structure: {"MQTTDeviceID": {"status":{"log_param1":"value1"}}}
