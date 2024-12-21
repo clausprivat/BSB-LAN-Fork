@@ -102,7 +102,7 @@ byte trusted_ip_addr2[4] = {0,0,0,0};
 byte mac[6] = { 0x00, 0x80, 0x41, 0x19, 0x69, 0x90 };
 
 // Setting bus type
-uint8_t bus_type = 1;  // set bus system at boot: 0 = BSB, 1 = LPB, 2 = PPS
+uint8_t bus_type = 0;  // set bus system at boot: 0 = BSB, 1 = LPB, 2 = PPS
 // BSB:
 // - 'own_address' sets own address, defaults to 0x42 (LAN in serial monitor)
 // - 'dest_address' sets destination address, defaults to 0 for heating system.
