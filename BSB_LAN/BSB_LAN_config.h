@@ -147,22 +147,53 @@ uint8_t logTelegram = LOGTELEGRAM_OFF;
 // Logging data from parameters
 // Interval and list of parameters can be redefined through /L command during runtime
 // Data will be written to "datalog.txt"
-unsigned long log_interval = 10;  // Logging interval (to SD card, UDP and MQTT broker) in seconds
+unsigned long log_interval = 60;  // Logging interval (to SD card, UDP and MQTT broker) in seconds
 parameter log_parameters[40] = {
 // parameter, destination (as in dest_address below, -1 means "default (dest_address) address")
-  {8700, -1},                   // Außentemperatur
-  {8743, -1},                  // Vorlauftemperatur
-  {8314, -1},                  // Rücklauftemperatur
-//  {20000, -1},                 // Spezialparameter: Brenner-Laufzeit Stufe 1
-//  {20001, -1},                 // Spezialparameter: Brenner-Takte Stufe 1
-//  {20002, -1},                 // Spezialparameter: Brenner-Laufzeit Stufe 2
-//  {20003, -1},                 // Spezialparameter: Brenner-Takte Stufe 2
-//  {20004, -1},                 // Spezialparameter: TWW-Laufzeit
-//  {20005, -1},                 // Spezialparameter: TWW-Takte
-//  {20050, -1},                 // Spezialparameter 20050-20099: 24h-Durchschnittswerte
-//  {20100, -1},                 // Spezialparameter 20100-20299: DHT22-Sensoren 1-50
-//  {20300, -1},                 // Spezialparameter 20300-20499: DS18B20-Sensoren 1-100
-//  {20500, -1}                  // Spezialparameter 20500-20699: MAX!-Sensoren 1-50
+//  {733, -1},                  //bsb_lan_00_11_heizkreis_1_733_verlangerung_tagesheizgrenze_hk1
+//  {766, -1},                  //bsb_lan_00_11_heizkreis_1_766_sd_raumtemperaturbegrenzung
+  {794, -1},                  //bsb_lan_00_11_heizkreis_1_794_aufheizgradient
+//  {1033, -1},                 //bsb_lan_00_13_heizkreis_2_1033_verlangerung_tagesheizgrenze_hk1
+//  {1066, -1},                 //bsb_lan_00_13_heizkreis_2_1066_sd_raumtemperaturbegrenzung
+  {1094, -1},                 //bsb_lan_00_13_heizkreis_2_1094_aufheizgradient
+//  {1601, -1},                 //bsb_lan_00_16_trinkwasser_1601_eco_wahl
+  {1630, -1},                 //bsb_lan_00_16_trinkwasser_1630_trinkwasser_ladevorrang
+  {1647, -1},                 //bsb_lan_00_16_trinkwasser_1647_zirkulationspumpenbetrieb_wahrend_legionellenfkt
+  {1661, -1},                 //bsb_lan_00_16_trinkwasser_1661_trinkwasser_zirkulationspumpe_taktbetrieb
+  {1680, -1},                 //bsb_lan_00_16_trinkwasser_1680_betriebsartumschaltung
+  {8000, -1},                 // bsb_lan_00_34_status_8000_status_heizkreis_1
+  {8001, -1},                 // bsb_lan_00_34_status_8001_status_heizkreis_2
+  {8003, -1},                 // bsb_lan_00_34_status_8003_status_trinkwasser
+  {8004, -1},                 // bsb_lan_00_34_status_8004_status_kuhlkreis_1
+  {8006, -1},                 //bsb_lan_00_34_status_8006_status_warmepumpe
+  {8025, -1},                 //bsb_lan_00_34_status_8025_status_kuhlkreis_2
+  {8138, -1},                 //bsb_lan_00_35_diagnose_kaskade_8138_kaskaden_vorlauftemperatur_istwert
+  {8150, -1},                 //bsb_lan_00_35_diagnose_kaskade_8150_zeit_bis_autom_erzeugerfolgeumschaltung
+  {8400, -1},                 //bsb_lan_00_36_diagnose_erzeuger_8400_zustand_verdichter_1
+  {8410, -1},                 //bsb_lan_00_36_diagnose_erzeuger_8410_rucklauftemperatur_warmepumpe
+  {8411, -1},                 //bsb_lan_00_36_diagnose_erzeuger_8411_sollwert_warmepumpe
+  {8412, -1},                 //bsb_lan_00_36_diagnose_erzeuger_8412_vorlauftemperatur_warmepumpe
+  {8700, -1},                 // bsb_lan_00_37_diagnose_verbraucher_8700_aussentemperatur
+  {8730, -1},                 // bsb_lan_00_37_diagnose_verbraucher_8730_zustand_heizkreispumpe_1
+  {8731, -1},                 // bsb_lan_00_37_diagnose_verbraucher_8731_zustand_heizkreismischer_1_auf
+  {8741, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8741_raumtemperatur_sollwert_1
+  {8742, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8742_raumtemperatur_modell_1
+  {8744, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8744_vorlauftemperatur_sollwert_resultierend_hk1
+  {8749, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8749_raumthermostat_heizkreis_1
+  {8760, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8760_zustand_heizkreispumpe_2
+  {8761, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8761_zustand_heizkreismischer_2_auf
+  {8762, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8762_zustand_heizkreismischer_2_zu
+  {8770, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8770_raumtemperatur_istwert_2
+  {8771, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8771_raumtemperatur_sollwert_2
+  {8772, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8772_raumtemperatur_modell_2
+  {8773, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8773_vorlauftemperatur_istwert_heizkreis_2
+  {8774, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8774_vorlauftemperatur_sollwert_resultierend_hk2
+  {8779, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8779_raumthermostat_heizkreis_2
+  {8820, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8820_zustand_trinkwasserpumpe
+  {8821, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8821_zustand_elektroeinsatz_trinkwasser
+  {8830, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8830_trinkwassertemperatur_istwert_oben_b3
+//  {8831, -1},                 //bsb_lan_00_37_diagnose_verbraucher_8831_trinkwassertemperatur_sollwert_aktuell
+
 };
 
 // Compile MQTT extension: activate sending log_parameters to MQTT broker every log_interval seconds
