@@ -1,8 +1,3 @@
-#define CF_LOGMODE_SD_CARD 1
-#define CF_LOGMODE_24AVG 2
-#define CF_LOGMODE_MQTT 4
-#define CF_LOGMODE_MQTT_ONLY_LOG_PARAMS 8
-#define CF_LOGMODE_UDP 16
 
 typedef enum{
 // Version 0 (header + PPS values + space for MAX! devices)

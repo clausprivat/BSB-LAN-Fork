@@ -1,3 +1,4 @@
+
 /*
     Modbus Library for Arduino
     Core functions
@@ -355,4 +356,5 @@ typedef Modbus::ResultCode (*cbModbusFileOp)(Modbus::FunctionCode func, uint16_t
 namespace std {
     void __throw_bad_function_call();
 }
+
 #endif

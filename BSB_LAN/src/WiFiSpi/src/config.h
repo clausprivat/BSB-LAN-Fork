@@ -1,3 +1,4 @@
+
 /*
   config.h - Library for Arduino SPI connection to ESP8266
   Copyright (c) 2019 Jiri Bilek. All rights reserved.
@@ -37,3 +38,4 @@
 //#define ESPSPI_DEBUG_OPTION_BAD_MESSAGE
 
 #endif
+

@@ -1,3 +1,4 @@
+
 #ifndef DallasTemperature_h
 #define DallasTemperature_h
 
@@ -243,3 +244,4 @@ private:
 
 };
 #endif
+

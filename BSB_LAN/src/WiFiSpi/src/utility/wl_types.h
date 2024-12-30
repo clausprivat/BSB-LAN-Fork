@@ -46,4 +46,6 @@ enum wl_auth_mode {
         AUTH_MODE_WPA2_PSK
 };
 
+
 #endif //_WL_TYPES_H_
+

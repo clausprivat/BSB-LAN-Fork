@@ -7,6 +7,10 @@
 - **ATTENTION: BREAKING CHANGE** The acknowledgement message sent by BSB-LAN to the `MQTT` topic has been removed. Instead, QoS for publishing messages has been set to level 1.
 - **ATTENTION: BREAKING CHANGE:** Log configuration values have changed. However, only users that have logged to UDP are affected and will have to adjust their settings.
 - **ATTENTION:** `/JK=ALL` now lists all categories of all devices in LPB systems with more than one device. Use `dev_fam` (device family), `dev_var` (device variant), `dev_id` (destination device ID) and `dev_name` (device model) elements to sort and identify which category applies to the current destination device. 
+
+- Added new URL command /QDB - this queries the heating system for device-specific parameters and activates these until reboot. Categories do not apply, you have know the parameter numbers you want to query and access them directy (e.g. /0-9999).  
+This is not a replacement for generating a proper device-specific parameter list as it only contains few parameter types which we know for certain how they work and no harm can be done (mostly read-only status temperatures). However, these can be helpful for heating technicians which want to monitor on the spot the behavior of a random heating system without the need to create a device-specific parameter list. 
+
 - Added setting to only publish log parameters to MQTT. Forcing MQTT updates via /poll topic are still possible.
 - Added state_class for non cumulative sensors in MQTT auto-discovery
 - Updated the room unit emulation in `custom_functions` to work with version 4.x.
@@ -30,9 +34,11 @@
 ##Version 4.0##
 **01.11.2024**  
 
-- **ATTENTION: BREAKING CHANGE!** Room temperature parameter 10000, 10001 and 10002 must now have the additional flag `FL_SPECIAL_INF`, otherwise setting temperature will not work!
+
+- **ATTENTION: BREAKING CHANGE!** Room temperature parameter 10000, 10001 and 10002 must now have the additional flag `FL_SPECIAL_INF`, otherwise setting temperature will not work! See `BSB_LAN_custom_defs.h.default` and search for `FL_SPECIAL_INF`to find the right line and use that as an example.
 - **ATTENTION: BREAKING CHANGE!** Outside temperature simulation parameter 10017 must have `FL_SPECIAL_INF` flag removed, otherwise setting temperature will not work!
-- **ATTENTION: BREAKING CHANGE!** Room temperature parameter 10000, 10001 and 10002 for Weishaupt heaters (device families 49, 50, 51 and 59) must now have `FL_SPECIAL_INF` flag removd, otherwise setting temperature will not work!
+- **ATTENTION: BREAKING CHANGE!** Room temperature parameter 10000, 10001 and 10002 for Weishaupt heaters (device families 49, 50, 51 and 59) must now have `FL_SPECIAL_INF` flag removed, otherwise setting temperature will not work!
+
 - **ATTENTION: BREAKING CHANGE!** URL commands `/U` (dislpay user-defined variables) and `/X` (display MAX! values) have been removed as these values can now be accessed via parameters 20000++
 - **ATTENTION: BREAKING CHANGE!** PPS time program parameters (15050-15091) have been streamlined with BSB/LPB time program parameters, resulting in only one parameter per day (instead of six), covering three switch points (start and end) per parameter.
 - **ATTENTION:** For ESP32, BSB-LAN requires ESP32 framework version 3.0.x - please look out for errors or strange behaviour (1-Wire sensors are still not tested) as well as any other kind of strange behaviour/crashes.
