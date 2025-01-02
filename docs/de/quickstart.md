@@ -1,4 +1,4 @@
-# Kurzanleitung
+# Schnellstart-Anleitung
 
 Diese Kurzanleitung ist für Nutzer gedacht, die Erfahrung mit der Installation und Konfiguration von Software auf ihrem Computer haben. Wenn du detailliertere Anweisungen benötigst, wirf bitte einen Blick in die [Installationsanweisungen](install.md)!
 
@@ -51,4 +51,5 @@ Wenn du BSB-LAN zum ersten Mal verwendest, wirst du feststellen, dass auf der We
 
 Es wird jedoch davon abgeraten, dies zu tun, da die genannten Mehrdeutigkeiten und Fehler das Risiko bergen, die Heizung falsch zu konfigurieren. Stattdessen wird empfohlen, auf den Knopf "**Gerätespezifische Parameterliste**" in BSB-LANs Menü zu klicken und die generierte Liste an Frederik (bsb(ät)code-it.de) zu senden. Aus dieser Datei kann eine Parameterliste erstellt werden, die genau zu dem Controller deiner Heizung passt. Leider kann dieser Prozess noch nicht automatisiert werden, aber immerhin muss er nur einmal durchgeführt werden. Diese Rohdaten enthalten keine Einstellungen oder andere persönliche Daten, sondern nur die Parameterstruktur deiner Heizung.
 
-Es liegt in meinem eigenen Interesse, diese Parameterlisten schnell zu erstellen und zurückzusenden, aber ich bitte um Verständnis, wenn es aufgrund von Arbeit oder familiären Verpflichtungen etwas länger dauert.
+Es liegt in meinem eigenen Interesse, diese Parameterlisten schnell zu erstellen und zurückzusenden, aber ich bitte um Verständnis, wenn es aufgrund von Arbeit oder familiären Verpflichtungen etwas länger dauert.  
+Wenn Du die Datei erhalten hast (oder die aus der Release-Version 2.2.x übernommen hast), ersetzt Du damit einfach die gleichnamige Datei im Ordner `BSB_LAN` und wiederholst die Schritte zum Flashen der Software wie oben beschrieben.
