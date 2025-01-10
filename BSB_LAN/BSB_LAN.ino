@@ -129,6 +129,7 @@ typedef struct {
   uint16_t dev_fam;
   uint16_t dev_var;
   uint8_t dev_id;
+  uint16_t dev_oc;
   uint32_t dev_serial;
   char name[33];
 } device_map;
@@ -158,7 +159,7 @@ void connectToMaxCul();
 void SetDevId();
 void mqtt_callback(char* topic, byte* payload, unsigned int length);  //Luposoft: predefintion
 void mqtt_sendtoBroker(parameter param);
-uint32_t printKat(uint8_t cat, int print_val, boolean debug_output=true);
+uint16_t printKat(uint8_t cat, bool print_val, bool debug_output=true);
 
 #include "src/Base64/src/Base64.h"
 
@@ -505,6 +506,7 @@ char *telegramDump; //Telegram dump for debugging in case of error. Dynamic allo
 
 uint8_t my_dev_fam = DEV_FAM(DEV_NONE);
 uint8_t my_dev_var = DEV_VAR(DEV_NONE);
+uint16_t my_dev_oc = 0;
 uint32_t my_dev_serial = 0;
 uint8_t default_flag = DEFAULT_FLAG;  // necessary for ESP32 SDK 2.0.4 and above to prevent tautological-compare errors
 
@@ -737,7 +739,7 @@ void printHTTPheader(uint16_t code, int mimetype, bool addcharset, bool isGzip, 
   printToWebClient("\r\n");
   if (isDownload) {
     printToWebClient("Content-Disposition: attachment; filename=\"BSB-LAN-");
-    printFmtToWebClient("%03u-%03u-%u.txt\"\r\n", my_dev_fam, my_dev_var, my_dev_serial);
+    printFmtToWebClient("%03u-%03u-%u-%u.txt\"\r\n", my_dev_fam, my_dev_var, my_dev_oc, my_dev_serial);
   }
 }
 
@@ -902,8 +904,11 @@ void listEnumValues(uint_farptr_t enumstr, uint16_t enumstr_len, const char *pre
 inline uint8_t get_cmdtbl_category(int i) {
   int cat_min = 0;
   int cat_max = 0;
+  if (active_cmdtbl == heating_cmdtbl && active_cmdtbl[i].line >= 0 && active_cmdtbl[i].line < 10000) {
+    return 0; // For temporary heating_cmdtbl, there is only one category 0 for all parameters below 10000
+  }
   for (uint cat=0;cat<CAT_UNKNOWN;cat++) {
-    printKat(cat, 0, false);
+    printKat(cat, false, false);
     if (decodedTelegram.error != 258 && decodedTelegram.error != 263) {
       cat_min = ENUM_CAT_NR[cat*2];
       cat_max = ENUM_CAT_NR[cat*2+1];
@@ -4133,6 +4138,7 @@ void GetDevId() {
                 dev_lookup[i].dev_id = decodedTelegram.src_addr;
                 dev_lookup[i].dev_fam = msg[10+bus->offset];
                 dev_lookup[i].dev_var = msg[12+bus->offset];
+                dev_lookup[i].dev_oc = (msg[13+bus->offset] << 8) + msg[14+bus->offset];
                 dev_lookup[i].dev_serial = (msg[15+bus->offset] << 24) + (msg[16+bus->offset] << 16) + (msg[17+bus->offset] << 8) + (msg[18+bus->offset]);
                 dev_lookup[i].name[0] = '\0';
                 break;
@@ -4170,6 +4176,7 @@ void GetDevId() {
       if (dev_lookup[i].dev_id == bus->getBusDest()) {
         my_dev_fam = dev_lookup[i].dev_fam;
         my_dev_var = dev_lookup[i].dev_var;
+        my_dev_oc = dev_lookup[i].dev_oc;
         my_dev_serial = dev_lookup[i].dev_serial;
       }
     }
@@ -4958,7 +4965,7 @@ void loop() {
         }
 
         //Send HTML pages without header and footer (For external interface)
-        if (webserver && p[1]=='W') {
+        if (p[1]=='W') {
           p++;
           httpflags |= HTTP_FRAG;
         }
@@ -4983,6 +4990,7 @@ void loop() {
           boolean create=atoi(p);    // .. to convert
           uint8_t save_my_dev_fam = my_dev_fam;
           uint8_t save_my_dev_var = my_dev_var;
+          uint16_t save_my_dev_oc = my_dev_oc;
           uint32_t save_my_dev_serial = my_dev_serial;
           uint8_t destAddr = bus->getBusDest();
           uint8_t tempDestAddr = destAddr;
@@ -5003,6 +5011,7 @@ void loop() {
             return_to_default_destination(destAddr);
             my_dev_fam = save_my_dev_fam;
             my_dev_var = save_my_dev_var;
+            my_dev_oc = save_my_dev_oc;
             my_dev_serial = save_my_dev_serial;
           }
           if (mqtt_success) {
@@ -5036,6 +5045,7 @@ void loop() {
           } else {
             uint8_t save_my_dev_fam = my_dev_fam;
             uint8_t save_my_dev_var = my_dev_var;
+            uint16_t save_my_dev_oc = my_dev_oc;
             uint32_t save_my_dev_serial = my_dev_serial;
             parameter param = parsingStringToParameter(p);
             line = param.number;
@@ -5083,6 +5093,7 @@ void loop() {
                 return_to_default_destination(destAddr);
                 my_dev_fam = save_my_dev_fam;
                 my_dev_var = save_my_dev_var;
+                my_dev_oc = save_my_dev_oc;
                 my_dev_serial = save_my_dev_serial;
               }
             }
@@ -5095,6 +5106,7 @@ void loop() {
         if (p[1]=='K' && !isdigit(p[2])) {
           uint8_t save_my_dev_fam = my_dev_fam;
           uint8_t save_my_dev_var = my_dev_var;
+          uint16_t save_my_dev_oc = my_dev_oc;
           uint32_t save_my_dev_serial = my_dev_serial;
           uint8_t destAddr = bus->getBusDest();
           if (p[2]=='!') {
@@ -5105,8 +5117,16 @@ void loop() {
           printToWebClient("<table><tr><td>&nbsp;</td><td>&nbsp;</td></tr>\r\n");
           float  cat_min = -1, cat_max = -1;
           for (int cat=0;cat<CAT_UNKNOWN;cat++) {
+            if (active_cmdtbl == heating_cmdtbl && cat < CAT_USER_DEFINED) {
+              if (cat == 0) {
+                printFmtToWebClient("<tr><td><a href='K0!%d'>", bus->getBusDest());
+                printToWebClient(CF_PROGLIST_TEXT "</a></td><td>0 - 9999</td></tr>\r\n");
+                writelnToDebug();
+              }
+              continue;
+            }
             if ((bus->getBusType() != BUS_PPS) || (bus->getBusType() == BUS_PPS && (cat == CAT_PPS || cat == CAT_USERSENSORS))) {
-              printKat(cat,1);
+              printKat(cat, true, true);
               if (decodedTelegram.error != 258 && decodedTelegram.error != 263) {
                 printFmtToWebClient("<tr><td><a href='K%d!%d'>", cat, bus->getBusDest());
                 cat_min = ENUM_CAT_NR[cat*2];
@@ -5114,7 +5134,6 @@ void loop() {
                 printToWebClient(decodedTelegram.enumdescaddr); //copy Category name to buffer
                 printFmtToWebClient("</a></td><td>%g - %g</td></tr>\r\n", cat_min, cat_max);
               }
-              writelnToDebug();
             }
           }
           printToWebClient("</table>");
@@ -5124,6 +5143,7 @@ void loop() {
             return_to_default_destination(destAddr);
             my_dev_fam = save_my_dev_fam;
             my_dev_var = save_my_dev_var;
+            my_dev_oc = save_my_dev_oc;
             my_dev_serial = save_my_dev_serial;
           }
           break;
@@ -5160,6 +5180,7 @@ void loop() {
           uint8_t destAddr = bus->getBusDest();
           uint8_t save_my_dev_fam = my_dev_fam;
           uint8_t save_my_dev_var = my_dev_var;
+          uint16_t save_my_dev_oc = my_dev_oc;
           uint32_t save_my_dev_serial = my_dev_serial;
           parameter param = parsingStringToParameter(&p[2]);
           float line = param.number;
@@ -5187,6 +5208,7 @@ void loop() {
             return_to_default_destination(destAddr);
             my_dev_fam = save_my_dev_fam;
             my_dev_var = save_my_dev_var;
+            my_dev_oc = save_my_dev_oc;
             my_dev_serial = save_my_dev_serial;
           }
 
@@ -5259,6 +5281,7 @@ void loop() {
             int temp_dev_fam = strtod(decodedTelegram.value,NULL);
             query_program_and_print_result(6226, "\r\n", NULL);
             int temp_dev_var = strtod(decodedTelegram.value,NULL);
+            query_program_and_print_result(6227, "\r\n", NULL);
             my_dev_fam = temp_dev_fam;
             my_dev_var = temp_dev_var;
             if (temp_dev_fam == 97) temp_dev_fam = 64;
@@ -5485,6 +5508,7 @@ void loop() {
             uint8_t tempDestAddr = destAddr;
             uint8_t save_my_dev_fam = my_dev_fam;
             uint8_t save_my_dev_var = my_dev_var;
+            uint16_t save_my_dev_oc = my_dev_oc;
             uint32_t save_my_dev_serial = my_dev_serial;
             uint8_t type = strtol(&p[2],NULL,16);
             uint32_t c = (uint32_t)strtoul(&p[5],NULL,16);
@@ -5531,6 +5555,7 @@ void loop() {
               return_to_default_destination(destAddr);
               my_dev_fam = save_my_dev_fam;
               my_dev_var = save_my_dev_var;
+              my_dev_oc = save_my_dev_oc;
               my_dev_serial = save_my_dev_serial;
             }
           } else {
@@ -5556,6 +5581,7 @@ void loop() {
           int16_t tempDestAddrOnPrevIteration = 0;
           uint8_t save_my_dev_fam = my_dev_fam;
           uint8_t save_my_dev_var = my_dev_var;
+          uint16_t save_my_dev_oc = my_dev_oc;
           uint32_t save_my_dev_serial = my_dev_serial;
           uint8_t opening_brackets = 0;
           char* json_token = strtok(p, "=,"); // drop everything before "="
@@ -5644,7 +5670,7 @@ void loop() {
                 } else {
                   not_first = true;
                 }
-                printFmtToWebClient("    { \"dev_id\": %d,  \"dev_fam\": %d, \"dev_var\": %d, \"dev_serial\": %d, \"dev_name\": \"%s\" }", dev_lookup[i].dev_id, dev_lookup[i].dev_fam, dev_lookup[i].dev_var, dev_lookup[i].dev_serial, dev_lookup[i].name);
+                printFmtToWebClient("    { \"dev_id\": %d,  \"dev_fam\": %d, \"dev_var\": %d, \"dev_serial\": %d, \"dev_oc\": %d, \"dev_name\": \"%s\" }", dev_lookup[i].dev_id, dev_lookup[i].dev_fam, dev_lookup[i].dev_var, dev_lookup[i].dev_oc, dev_lookup[i].dev_serial, dev_lookup[i].name);
               }
             }
             printToWebClient("\r\n  ],\r\n");
@@ -5711,6 +5737,7 @@ void loop() {
           if (p[2] == 'B'){ // backup settings to file
             uint8_t save_my_dev_fam = my_dev_fam;
             uint8_t save_my_dev_var = my_dev_var;
+            uint8_t save_my_dev_oc = my_dev_oc;
             uint32_t save_my_dev_serial = my_dev_serial;
             int16_t destAddr = bus->getBusDest();
             int16_t tempDestAddr = destAddr;
@@ -5722,7 +5749,7 @@ void loop() {
             bool notfirst = false;
             for (uint cat = 1; cat < CAT_UNKNOWN; cat++) { //Ignore date/time category
 
-              printKat(cat,1);
+              printKat(cat, true, true);
               if ((bus->getBusType() != BUS_PPS && decodedTelegram.error != 258 && decodedTelegram.error != 263) || (bus->getBusType() == BUS_PPS && (cat == CAT_PPS || cat == CAT_USERSENSORS))) {
 
                 cat_min = ENUM_CAT_NR[cat * 2];
@@ -5762,6 +5789,7 @@ next_parameter:
               return_to_default_destination(destAddr);
               my_dev_fam = save_my_dev_fam;
               my_dev_var = save_my_dev_var;
+              my_dev_oc = save_my_dev_oc;
               my_dev_serial = save_my_dev_serial;
             }
 
@@ -5781,6 +5809,7 @@ next_parameter:
               break;
             }
           }
+          int cat_dev_id = -1;
           tempDestAddr = destAddr;
           tempDestAddrOnPrevIteration = destAddr;
           while ((client.available() && opening_brackets > 0) || json_token!=NULL) {
@@ -5906,15 +5935,23 @@ next_parameter:
               if (p[2]=='K' && !isdigit(p[4])) {
                 bool notfirst = false;
                 for (uint cat=0;cat<CAT_UNKNOWN;cat++) {
-                  uint32_t cat_dev_fam_var = printKat(cat,1);
-                  uint16_t cat_dev_fam = cat_dev_fam_var >> 8;
-                  uint16_t cat_dev_var = cat_dev_fam_var & 0xFF;
-                  writelnToDebug();
+                  uint16_t cat_dev_fam_var = printKat(cat, true, true);
+                  uint8_t cat_dev_fam = cat_dev_fam_var >> 8;
+                  uint8_t cat_dev_var = cat_dev_fam_var & 0xFF;
+                  cat_min = ENUM_CAT_NR[cat*2];
+                  cat_max = ENUM_CAT_NR[cat*2+1];
                   if ((bus->getBusType() != BUS_PPS && decodedTelegram.error != 258) || (bus->getBusType() == BUS_PPS && (cat == CAT_PPS || cat == CAT_USERSENSORS))) {
+                    if (active_cmdtbl == heating_cmdtbl && cat < CAT_USER_DEFINED) {
+                      if (cat == 0) {
+                        cat_min = 0;
+                        cat_max = 9999;
+                        decodedTelegram.enumdescaddr = CF_PROGLIST_TXT;
+                      } else {
+                        continue;
+                      }
+                    }
                     if (notfirst) {printToWebClient(",\r\n");} else {notfirst = true;}
                     printFmtToWebClient("\"%d\": { \"name\": \"", cat);
-                    cat_min = ENUM_CAT_NR[cat*2];
-                    cat_max = ENUM_CAT_NR[cat*2+1];
                     uint8_t cat_dev_id = 0;
                     char* cat_dev_name = NULL;
                     for (uint x=0; x < sizeof(dev_lookup)/sizeof(dev_lookup[0]); x++) {
@@ -5945,8 +5982,14 @@ next_parameter:
                   if(search_cat > sizeof(ENUM_CAT_NR)/sizeof(ENUM_CAT_NR[0])) {
                     search_cat = 0; // if we got an invalid category, just use 0
                   }
-                  cat_min = ENUM_CAT_NR[search_cat];
-                  cat_max = ENUM_CAT_NR[search_cat+1];
+                  if (active_cmdtbl == heating_cmdtbl && search_cat < CAT_USER_DEFINED) {
+                    search_cat = 0;
+                    cat_min = 0;
+                    cat_max = 9999;
+                  } else {
+                    cat_min = ENUM_CAT_NR[search_cat];
+                    cat_max = ENUM_CAT_NR[search_cat+1];
+                  }
 /*
                   if (search_cat+2 < sizeof(ENUM_CAT_NR)/sizeof(*ENUM_CAT_NR)) { // only perform category boundary check if there is a higher category present
                     if (cat_max > ENUM_CAT_NR[search_cat+2]) {
@@ -5972,6 +6015,19 @@ next_parameter:
 
                 cmd = active_cmdtbl[i_line].cmd;
 
+                if (cat_dev_id < 0) {
+                  uint8_t cat = atoi(&p[4]);
+                  uint16_t cat_dev_fam_var = printKat(cat, true, true);
+                  uint8_t cat_dev_fam = cat_dev_fam_var >> 8;
+                  uint8_t cat_dev_var = cat_dev_fam_var & 0xFF;
+                  for (uint x=0; x < sizeof(dev_lookup)/sizeof(dev_lookup[0]); x++) {
+                    if (dev_lookup[x].dev_fam == cat_dev_fam && dev_lookup[x].dev_var == cat_dev_var) {
+                      cat_dev_id = dev_lookup[x].dev_id;
+                      break;
+                    } 
+                  }
+                }
+
                 if (i_line<0 || (cmd == CMD_UNKNOWN && json_parameter < (float)BSP_INTERNAL)) {//CMD_UNKNOWN except virtual programs
                   continue;
                 }
@@ -5989,7 +6045,7 @@ next_parameter:
                 printToWebClient(decodedTelegram.progtypedescaddr);
                 printToWebClient("\",\r\n    \"dataType_family\": \"");
                 printToWebClient(decodedTelegram.data_type_descaddr);
-                printFmtToWebClient("\",\r\n    \"destination\": %d,\r\n", tempDestAddr);
+                printFmtToWebClient("\",\r\n    \"destination\": %d,\r\n", p[2] == 'K'?cat_dev_id:tempDestAddr);
 
                 if (p[2]=='Q') {
                   printFmtToWebClient("    \"error\": %d,\r\n    \"value\": \"%s\",\r\n    \"desc\": \"", decodedTelegram.error, decodedTelegram.value);
@@ -6028,7 +6084,7 @@ next_parameter:
                 if ((LoggingMode & CF_LOGMODE_MQTT) && !(LoggingMode & CF_LOGMODE_MQTT_ONLY_LOG_PARAMS)) {   // If not only log parameters are sent to MQTT broker, we need to send it here due to lack of a query() call.
                   LogToMQTT(json_parameter);
                 }
-                printFmtToWebClient("  \"%g\": {\r\n    \"status\": %d\r\n  }", json_parameter, status);
+                printFmtToWebClient("  \"%g\": {\r\n    \"status\": %d,\r\n    \"destination\": %d\r\n  }", json_parameter, status, tempDestAddr);
 
                 printFmtToDebug("Setting parameter %g to \"%s\" with type %d to destination %d\r\n", json_parameter, json_value_string, json_type, tempDestAddr);
               }
@@ -6060,6 +6116,7 @@ next_parameter:
             return_to_default_destination(destAddr);
             my_dev_fam = save_my_dev_fam;
             my_dev_var = save_my_dev_var;
+            my_dev_oc = save_my_dev_oc;
             my_dev_serial = save_my_dev_serial;
           }
           bool needReboot = false;
@@ -6584,22 +6641,27 @@ next_parameter:
             float end=-1;
             uint8_t save_my_dev_fam = my_dev_fam;
             uint8_t save_my_dev_var = my_dev_var;
+            uint16_t save_my_dev_oc = my_dev_oc;
             uint32_t save_my_dev_serial = my_dev_serial;
             uint8_t destAddr = bus->getBusDest();
             if (range[0]=='K') {
               //Here will be parsing category number not parameter
-              parameter param = parsingStringToParameter(range+1);
-              if (param.dest_addr > -1) {
-                set_temp_destination(param.dest_addr);
+              parameter category = parsingStringToParameter(range+1);
+              if (category.dest_addr > -1) {
+                set_temp_destination(category.dest_addr);
               }
-              printKat(param.number,1);
-              writelnToDebug();
-              uint cat = param.number * 2; // * 2 - two columns in ENUM_CAT_NR table
+              printKat(category.number, true, true);
+              uint cat = category.number * 2; // * 2 - two columns in ENUM_CAT_NR table
               if (cat >= sizeof(ENUM_CAT_NR)/sizeof(*ENUM_CAT_NR)) {  // set category to highest category if selected category is out of range
                 cat = (sizeof(ENUM_CAT_NR)/sizeof(*ENUM_CAT_NR))-2;
               }
               start = ENUM_CAT_NR[cat];
               end = ENUM_CAT_NR[cat+1];
+              if (active_cmdtbl == heating_cmdtbl && category.number < (float)CAT_USER_DEFINED) {
+                cat = 0;
+                start = 0;
+                end = 9999;
+              }
 /*
               if (cat+2 < sizeof(ENUM_CAT_NR)/sizeof(*ENUM_CAT_NR)) { // only perform category boundary check if there is a higher category present
                 if (end > ENUM_CAT_NR[cat+2]) {
@@ -6640,6 +6702,7 @@ next_parameter:
               return_to_default_destination(destAddr);
               my_dev_fam = save_my_dev_fam;
               my_dev_var = save_my_dev_var;
+              my_dev_oc = save_my_dev_oc;
               my_dev_serial = save_my_dev_serial;
             }
           }
@@ -6688,6 +6751,7 @@ next_parameter:
         uint8_t d_addr = destAddr;
         uint8_t save_my_dev_fam = my_dev_fam;
         uint8_t save_my_dev_var = my_dev_var;
+        uint16_t save_my_dev_oc = my_dev_oc;
         uint32_t save_my_dev_serial = my_dev_serial;
         for (int i=0; i < numLogValues; i++) {
           if (log_parameters[i].number > 0) {
@@ -6702,6 +6766,7 @@ next_parameter:
                 return_to_default_destination(destAddr);
                 my_dev_fam = save_my_dev_fam;
                 my_dev_var = save_my_dev_var;
+                my_dev_oc = save_my_dev_oc;
                 my_dev_serial = save_my_dev_serial;
               }
             }
@@ -6716,6 +6781,7 @@ next_parameter:
           return_to_default_destination(destAddr);
           my_dev_fam = save_my_dev_fam;
           my_dev_var = save_my_dev_var;
+          my_dev_oc = save_my_dev_oc;
           my_dev_serial = save_my_dev_serial;
 
         }
@@ -6766,6 +6832,7 @@ next_parameter:
       uint8_t d_addr = destAddr;
       uint8_t save_my_dev_fam = my_dev_fam;
       uint8_t save_my_dev_var = my_dev_var;
+      uint8_t save_my_dev_oc = my_dev_oc;
       uint32_t save_my_dev_serial = my_dev_serial;
       for (int i = 0; i < numLogValues; i++) {
         int outBufLen = 0;
@@ -6781,6 +6848,7 @@ next_parameter:
               return_to_default_destination(destAddr);
               my_dev_fam = save_my_dev_fam;
               my_dev_var = save_my_dev_var;
+              my_dev_oc = save_my_dev_oc;
               my_dev_serial = save_my_dev_serial;
             }
           }
@@ -6829,6 +6897,7 @@ next_parameter:
         return_to_default_destination(destAddr);
         my_dev_fam = save_my_dev_fam;
         my_dev_var = save_my_dev_var;
+        my_dev_oc = save_my_dev_oc;
         my_dev_serial = save_my_dev_serial;
       }
     }
@@ -6849,6 +6918,7 @@ next_parameter:
       uint8_t d_addr = destAddr;
       uint8_t save_my_dev_fam = my_dev_fam;
       uint8_t save_my_dev_var = my_dev_var;
+      uint16_t save_my_dev_oc = my_dev_oc;
       uint32_t save_my_dev_serial = my_dev_serial;
       for (int i = 0; i < numAverages; i++) {
         if (avg_parameters[i].number > 0) {
@@ -6864,6 +6934,7 @@ next_parameter:
               return_to_default_destination(destAddr);
               my_dev_fam = save_my_dev_fam;
               my_dev_var = save_my_dev_var;
+              my_dev_oc = save_my_dev_oc;
               my_dev_serial = save_my_dev_serial;
             }
           }
@@ -6885,6 +6956,7 @@ next_parameter:
         return_to_default_destination(destAddr);
         my_dev_fam = save_my_dev_fam;
         my_dev_var = save_my_dev_var;
+        my_dev_oc = save_my_dev_oc;
         my_dev_serial = save_my_dev_serial;
       }
 
@@ -7362,6 +7434,7 @@ for (uint i=0; i<sizeof(dev_lookup)/sizeof(dev_lookup[0]); i++) {
   dev_lookup[i].dev_fam = 0xFF;
   dev_lookup[i].dev_var = 0xFF;
   dev_lookup[i].dev_id = 0xFF;
+  dev_lookup[i].dev_oc = 0xFF;
   dev_lookup[i].name[0] = '\0';
 }
 
@@ -7806,6 +7879,7 @@ active_cmdtbl_size = sizeof(cmdtbl)/sizeof(cmdtbl[0]);
     // Workaround for problems connecting to wireless network on some ESP32, see here: https://github.com/espressif/arduino-esp32/issues/2501#issuecomment-731618196
     esp_wifi_disconnect(); //disconnect form wifi to set new wifi connection
     WiFi.mode(WIFI_STA); //init wifi mode
+    if (mDNS_hostname[0]) WiFi.setHostname(mDNS_hostname);
     esp_wifi_set_bandwidth(WIFI_IF_STA, WIFI_BW_HT20);  // W.Bra. 23.03.23 HT20 - reduce bandwidth from 40 to 20 MHz. In 2.4MHz networks, this will increase speed and stability most of the time, or will at worst result in a roughly 10% decrease in transmission speed.
   
     printToDebug("Setting up WiFi interface");

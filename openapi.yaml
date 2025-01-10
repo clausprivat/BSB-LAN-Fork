@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: BSB-LAN API
-  version: '2.3'
+  version: '2.4'
   description: BSB-LAN JSON API Specification
   termsOfService: ''
   contact:
@@ -752,6 +752,10 @@ components:
           type: number
           format: integer
           description: Device variant
+        dev_oc:
+          type: number
+          format: integer
+          description: Device object catalog version
         dev_serial:
           type: number
           format: integer
@@ -966,10 +970,11 @@ components:
         - Value
         - Type
       example:
-        Parameter: '700'
-        Value: '1'
-        Destination: '0'
-        Type: '1'
+        '700':
+          parameter: 700
+          value: '1'
+          destination: 0
+          type: 1
 
     ParameterWriteResult:
       title: ParameterWriteResult
@@ -990,9 +995,14 @@ components:
           format: integer
           minimum: 0
           maximum: 2
+        destination:
+          description: 'Destination device'
+          type: number
+          format: integer
       example:
-        Parameter: "700"
-        Status: 1
+        '700':
+          status: 1
+          destination: 0
 
     PossibleValue:
       title: PossibleValue
@@ -1195,10 +1205,8 @@ components:
     ReadWrite:
       title: ReadWrite
       description: |
-        0 - read/write
-
-        1 - readonly
-        
+        0 - read/write  
+        1 - readonly  
         2 - write only
       type: number
       format: integer
@@ -1208,8 +1216,7 @@ components:
     WriteType:
       title: WriteType
       description: |
-        0 - INF
-            
+        0 - INF  
         1 - SET
       type: number
       format: integer
